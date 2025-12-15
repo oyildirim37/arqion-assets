@@ -25,7 +25,6 @@
     return payload;
   };
 
-  // Executes ONLY scripts you deliberately defer (for future GA4/Pixel/etc.)
   const runDeferred = (consent) => {
     const allow = {
       analytics: consent.analytics,
@@ -48,7 +47,6 @@
     });
   };
 
-  // If consent exists: apply deferred scripts and exit early
   const existing = get();
   if (existing) {
     runDeferred(existing);
@@ -76,124 +74,248 @@
   --cb-shadow:0 20px 60px rgba(0,0,0,.60);
   --cb-font:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
 }
-#cb-root{position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:var(--cb-font);}
-.cb-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;transition:opacity .18s ease;}
+
+#cb-root{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  pointer-events:none;
+  font-family:var(--cb-font);
+}
+
+.cb-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  opacity:0;
+  transition:opacity .18s ease;
+}
+
 .cb-panel{
-  position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
+  position:absolute;
+  left:50%;
+  bottom:22px;
+  transform:translateX(-50%);
   width:min(980px,calc(100vw - 28px));
   background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
   border:1px solid var(--cb-border);
   border-radius:var(--cb-radius);
   box-shadow:var(--cb-shadow);
-  padding:18px 18px 16px;
+  padding:20px;
   color:var(--cb-text);
   pointer-events:auto;
   opacity:0;
   transform:translateX(-50%) translateY(12px);
   transition:opacity .18s ease,transform .18s ease;
   backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
 }
 
 .cb-visible{pointer-events:auto;}
 .cb-visible .cb-backdrop{opacity:1;pointer-events:auto;}
 .cb-visible .cb-panel{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP: Side-by-side layout (text left, buttons right)
+   ═══════════════════════════════════════════════════════════ */
 .cb-top{
-  display:flex;
-  gap:16px;
-  align-items:center; /* Y-axis centered for the right side (buttons column) */
-  justify-content:space-between;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:24px;
+  align-items:center;
 }
-.cb-left{flex:1; min-width:0;}
-.cb-title{margin:0 0 6px;font-size:16px;font-weight:800;letter-spacing:.2px;}
-.cb-text{margin:0;font-size:13px;line-height:1.5;color:var(--cb-muted);max-width:74ch;}
-.cb-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
-.cb-links a{color:var(--cb-text);text-decoration:none;border-bottom:1px dashed rgba(255,255,255,.22);}
+
+.cb-left{min-width:0;}
+.cb-title{margin:0 0 8px;font-size:16px;font-weight:800;letter-spacing:.2px;}
+.cb-text{margin:0;font-size:13px;line-height:1.55;color:var(--cb-muted);max-width:68ch;}
+
+.cb-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:12px;
+}
+.cb-links a{
+  color:var(--cb-text);
+  text-decoration:none;
+  font-size:13px;
+  border-bottom:1px dashed rgba(255,255,255,.22);
+  transition:border-color .15s ease;
+}
 .cb-links a:hover{border-bottom-color:var(--cb-accent);}
 
 .cb-actions{
   display:flex;
   flex-direction:column;
   gap:10px;
-  align-items:stretch;
-  justify-content:center; /* Y-axis centered */
-  min-width:220px;
+  min-width:200px;
 }
 
 .cb-btn{
   border:1px solid var(--cb-border);
   background:transparent;
   color:var(--cb-text);
-  padding:10px 12px;
+  padding:11px 16px;
   border-radius:12px;
   font-size:13px;
-  font-weight:750;
+  font-weight:700;
   cursor:pointer;
   white-space:nowrap;
+  transition:background .15s ease, border-color .15s ease;
 }
-.cb-btn-primary{background:#fff;color:#0b0f12;border-color:transparent;}
-.cb-small{margin-top:10px;font-size:12px;color:var(--cb-muted);}
+.cb-btn:hover{background:rgba(255,255,255,.05);}
+.cb-btn-primary{
+  background:#fff;
+  color:#0b0f12;
+  border-color:transparent;
+}
+.cb-btn-primary:hover{background:#e9eef3;}
 
+/* ═══════════════════════════════════════════════════════════
+   MOBILE: Stacked layout (text top, buttons below)
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 840px){
+  .cb-panel{
+    bottom:12px;
+    width:calc(100vw - 24px);
+    padding:18px 16px;
+    max-height:calc(100dvh - 24px);
+    overflow-y:auto;
+  }
+  
+  .cb-top{
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+  
+  .cb-actions{
+    flex-direction:row;
+    flex-wrap:wrap;
+    gap:8px;
+    min-width:0;
+  }
+  
+  .cb-btn{
+    flex:1 1 calc(50% - 4px);
+    min-width:0;
+    padding:12px 10px;
+    text-align:center;
+  }
+  
+  /* Primary button full width on its own row */
+  .cb-btn-primary{
+    flex:1 1 100%;
+    order:1;
+  }
+  
+  .cb-title{font-size:15px;}
+  .cb-text{font-size:12.5px;}
+}
+
+/* Extra small screens: all buttons full width */
+@media (max-width: 400px){
+  .cb-actions{
+    flex-direction:column;
+  }
+  .cb-btn{
+    flex:1 1 100%;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCORDION / SETTINGS
+   ═══════════════════════════════════════════════════════════ */
 .cb-accordion{
-  margin-top:14px;
+  margin-top:16px;
   border-top:1px solid var(--cb-border);
-  padding-top:12px;
+  padding-top:14px;
   display:none;
 }
 .cb-accordion.open{display:block;}
+
 .cb-acc-head{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:12px;
-  margin-bottom:10px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
 }
 .cb-acc-title{font-size:13px;font-weight:800;margin:0;}
 .cb-acc-note{font-size:12px;color:var(--cb-muted);margin:0;}
 
-.cb-grid{display:grid;grid-template-columns:1fr;gap:10px;}
-@media(min-width:760px){.cb-grid{grid-template-columns:1fr 1fr;}}
+.cb-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:10px;
+}
+
+@media (max-width: 600px){
+  .cb-grid{grid-template-columns:1fr;}
+}
 
 .cb-card{
   border:1px solid var(--cb-border);
   border-radius:14px;
-  padding:12px;
+  padding:14px;
   background:rgba(255,255,255,.02);
 }
-.cb-card h4{margin:0 0 6px;font-size:13.5px;}
-.cb-card p{margin:0 0 10px;font-size:12.5px;line-height:1.45;color:var(--cb-muted);}
-.cb-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.cb-card h4{margin:0 0 6px;font-size:13px;font-weight:700;}
+.cb-card p{margin:0;font-size:12px;line-height:1.45;color:var(--cb-muted);}
+.cb-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
 
 .cb-switch{
   appearance:none;
-  width:46px;height:28px;
+  -webkit-appearance:none;
+  width:44px;
+  height:26px;
   border-radius:999px;
   background:rgba(255,255,255,.10);
   border:1px solid var(--cb-border);
   position:relative;
   cursor:pointer;
+  flex-shrink:0;
+  transition:background .15s ease, border-color .15s ease;
 }
 .cb-switch:before{
   content:"";
-  position:absolute;top:50%;left:4px;
-  width:20px;height:20px;border-radius:50%;
+  position:absolute;
+  top:50%;
+  left:3px;
+  width:18px;
+  height:18px;
+  border-radius:50%;
   transform:translateY(-50%);
   background:#fff;
   transition:left .16s ease;
 }
-.cb-switch:checked{background:rgba(0,255,217,.18);border-color:rgba(0,255,217,.40);}
-.cb-switch:checked:before{left:22px;}
+.cb-switch:checked{
+  background:rgba(0,255,217,.18);
+  border-color:rgba(0,255,217,.40);
+}
+.cb-switch:checked:before{left:21px;}
 .cb-switch:disabled{opacity:.6;cursor:not-allowed;}
 
-.cb-togglelink{display:inline-flex;align-items:center;gap:8px;font-weight:750;}
-.cb-caret{display:inline-block;transform:rotate(0deg);transition:transform .15s ease;opacity:.85;}
+.cb-togglelink{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-weight:700;
+  font-size:13px;
+}
+.cb-caret{
+  display:inline-block;
+  transform:rotate(0deg);
+  transition:transform .15s ease;
+  opacity:.75;
+  font-size:11px;
+}
 .cb-togglelink.open .cb-caret{transform:rotate(180deg);}
 
-/* Responsive: stack + full-width buttons */
-@media (max-width: 720px){
-  .cb-top{flex-direction:column;align-items:stretch;}
-  .cb-actions{width:100%;min-width:0;}
-  .cb-btn{width:100%;}
+.cb-small{
+  margin-top:12px;
+  font-size:11px;
+  color:var(--cb-muted);
 }
 `;
     document.head.appendChild(style);
@@ -230,7 +352,7 @@
               <h4>Notwendig</h4>
               <input class="cb-switch" type="checkbox" checked disabled aria-label="Notwendige Cookies aktiviert">
             </div>
-            <p>Erforderlich für grundlegende Funktionen (z. B. Sicherheit, Darstellung, Speicherung Ihrer Auswahl).</p>
+            <p>Erforderlich für grundlegende Funktionen (z.B. Sicherheit, Darstellung, Speicherung Ihrer Auswahl).</p>
           </div>
 
           <div class="cb-card">
@@ -254,12 +376,12 @@
               <h4>Funktional</h4>
               <input class="cb-switch" type="checkbox" id="cb-functional" aria-label="Funktionale Cookies">
             </div>
-            <p>Optionale Funktionen (z. B. eingebettete Inhalte). Nur falls Sie diese nutzen.</p>
+            <p>Optionale Funktionen (z.B. eingebettete Inhalte). Nur falls Sie diese nutzen.</p>
           </div>
         </div>
 
-        <div class="cb-small" style="margin-top:10px;">
-          Sie können Ihre Auswahl jederzeit über „Cookie-Einstellungen“ ändern.
+        <div class="cb-small">
+          Sie können Ihre Auswahl jederzeit über „Cookie-Einstellungen" ändern.
         </div>
       </div>
     </div>
@@ -295,7 +417,6 @@
 
   function hide() {
     root.classList.remove("cb-visible");
-    // keep accordion state as-is (user choice)
   }
 
   function openBannerAndSettings() {
@@ -307,7 +428,6 @@
   }
 
   function bind() {
-    // Framer-safe footer link: any <a href="#cookie-settings"> opens settings
     document.addEventListener("click", (e) => {
       const a = e.target?.closest?.(`a[href="${FOOTER_HASH}"]`);
       if (!a) return;
@@ -315,12 +435,10 @@
       openBannerAndSettings();
     });
 
-    // If user opens a URL that already has the hash
     if (location.hash === FOOTER_HASH) {
       setTimeout(() => openBannerAndSettings(), 0);
     }
 
-    // Collapse settings when clicking backdrop (banner stays)
     $("[data-cb-close]", root).addEventListener("click", () => expand(false));
 
     $("#cb-toggle", root).addEventListener("click", (e) => {
@@ -352,14 +470,12 @@
     });
   }
 
-  // Public API (optional)
   window.ArqionCookie = {
     open: () => openBannerAndSettings(),
     get,
     reset: () => { localStorage.removeItem(KEY); mount(true); root.classList.add("cb-visible"); }
   };
 
-  // Show banner ONLY if no consent stored yet
   if (!existing) {
     mount(true);
   }
