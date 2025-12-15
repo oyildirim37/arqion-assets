@@ -1,1 +1,0 @@
-# arqion-assets
