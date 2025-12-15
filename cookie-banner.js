@@ -1,14 +1,19 @@
 (() => {
-  const KEY = "arqion_cookie_consent_v4";
+  const KEY = "arqion_cookie_consent_v5";
   const PRIVACY_URL = "https://www.arqion.com/legal/privacy-policy";
-  const IMPRINT_URL  = "https://www.arqion.com/legal/imprint";
+  const IMPRINT_URL = "https://www.arqion.com/legal/imprint";
+  const FOOTER_HASH = "#cookie-settings";
 
   const $ = (s, r = document) => r.querySelector(s);
 
-  const get = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } };
+  const get = () => {
+    try { return JSON.parse(localStorage.getItem(KEY)); }
+    catch { return null; }
+  };
+
   const set = (c) => {
     const payload = {
-      version: 4,
+      version: 5,
       updatedAt: new Date().toISOString(),
       necessary: true,
       analytics: !!c.analytics,
@@ -20,15 +25,20 @@
     return payload;
   };
 
-  // Executes ONLY scripts you deliberately defer (for your future GA4/Pixel/etc.)
+  // Executes ONLY scripts you deliberately defer (for future GA4/Pixel/etc.)
   const runDeferred = (consent) => {
-    const allow = { analytics: consent.analytics, marketing: consent.marketing, functional: consent.functional };
+    const allow = {
+      analytics: consent.analytics,
+      marketing: consent.marketing,
+      functional: consent.functional,
+    };
+
     document.querySelectorAll('script[type="text/plain"][data-cookiecat]').forEach((node) => {
       const cat = node.getAttribute("data-cookiecat");
       if (!cat || !allow[cat]) return;
 
       const s = document.createElement("script");
-      [...node.attributes].forEach(a => {
+      [...node.attributes].forEach((a) => {
         if (a.name === "type" || a.name === "data-cookiecat") return;
         s.setAttribute(a.name, a.value);
       });
@@ -38,72 +48,153 @@
     });
   };
 
-  // Public API (footer link etc.)
-  window.ArqionCookie = {
-    open: () => {
-      mount(true);
-      const c = get() || { analytics:false, marketing:false, functional:false };
-      sync(c);
-      expand(true);
-      root.classList.add("cb-visible");
-    },
-    get,
-    reset: () => { localStorage.removeItem(KEY); mount(true); root.classList.add("cb-visible"); }
-  };
-
-  // If consent exists: apply and exit
+  // If consent exists: apply deferred scripts and exit early
   const existing = get();
-  if (existing) { runDeferred(existing); return; }
+  if (existing) {
+    runDeferred(existing);
+  }
 
   let mounted = false;
   let root;
 
   function mount(show = true) {
-    if (mounted) { if (show) root.classList.add("cb-visible"); return; }
+    if (mounted) {
+      if (show) root.classList.add("cb-visible");
+      return;
+    }
     mounted = true;
 
     const style = document.createElement("style");
     style.textContent = `
-:root{--cb-bg:#0b0f12;--cb-text:#e9eef3;--cb-muted:#9aa7b4;--cb-border:rgba(255,255,255,.12);--cb-accent:#00FFD9;--cb-radius:16px;--cb-shadow:0 20px 60px rgba(0,0,0,.60);--cb-font:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+:root{
+  --cb-bg:#0b0f12;
+  --cb-text:#e9eef3;
+  --cb-muted:#9aa7b4;
+  --cb-border:rgba(255,255,255,.12);
+  --cb-accent:#00FFD9;
+  --cb-radius:16px;
+  --cb-shadow:0 20px 60px rgba(0,0,0,.60);
+  --cb-font:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+}
 #cb-root{position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:var(--cb-font);}
 .cb-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;transition:opacity .18s ease;}
-.cb-panel{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(980px,calc(100vw - 28px));background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid var(--cb-border);border-radius:var(--cb-radius);box-shadow:var(--cb-shadow);padding:18px 18px 16px;color:var(--cb-text);pointer-events:auto;opacity:0;transform:translateX(-50%) translateY(12px);transition:opacity .18s ease,transform .18s ease;backdrop-filter:blur(10px);}
+.cb-panel{
+  position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
+  width:min(980px,calc(100vw - 28px));
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
+  border:1px solid var(--cb-border);
+  border-radius:var(--cb-radius);
+  box-shadow:var(--cb-shadow);
+  padding:18px 18px 16px;
+  color:var(--cb-text);
+  pointer-events:auto;
+  opacity:0;
+  transform:translateX(-50%) translateY(12px);
+  transition:opacity .18s ease,transform .18s ease;
+  backdrop-filter:blur(10px);
+}
+
 .cb-visible{pointer-events:auto;}
 .cb-visible .cb-backdrop{opacity:1;pointer-events:auto;}
 .cb-visible .cb-panel{opacity:1;transform:translateX(-50%) translateY(0);}
 
-.cb-top{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;}
+.cb-top{
+  display:flex;
+  gap:16px;
+  align-items:center; /* Y-axis centered for the right side (buttons column) */
+  justify-content:space-between;
+}
+.cb-left{flex:1; min-width:0;}
 .cb-title{margin:0 0 6px;font-size:16px;font-weight:800;letter-spacing:.2px;}
 .cb-text{margin:0;font-size:13px;line-height:1.5;color:var(--cb-muted);max-width:74ch;}
 .cb-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
 .cb-links a{color:var(--cb-text);text-decoration:none;border-bottom:1px dashed rgba(255,255,255,.22);}
 .cb-links a:hover{border-bottom-color:var(--cb-accent);}
-.cb-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;align-items:center;margin-top:14px;}
-.cb-btn{border:1px solid var(--cb-border);background:transparent;color:var(--cb-text);padding:10px 12px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;}
+
+.cb-actions{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  align-items:stretch;
+  justify-content:center; /* Y-axis centered */
+  min-width:220px;
+}
+
+.cb-btn{
+  border:1px solid var(--cb-border);
+  background:transparent;
+  color:var(--cb-text);
+  padding:10px 12px;
+  border-radius:12px;
+  font-size:13px;
+  font-weight:750;
+  cursor:pointer;
+  white-space:nowrap;
+}
 .cb-btn-primary{background:#fff;color:#0b0f12;border-color:transparent;}
 .cb-small{margin-top:10px;font-size:12px;color:var(--cb-muted);}
 
-.cb-accordion{margin-top:14px;border-top:1px solid var(--cb-border);padding-top:12px;display:none;}
+.cb-accordion{
+  margin-top:14px;
+  border-top:1px solid var(--cb-border);
+  padding-top:12px;
+  display:none;
+}
 .cb-accordion.open{display:block;}
-.cb-acc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.cb-acc-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
 .cb-acc-title{font-size:13px;font-weight:800;margin:0;}
 .cb-acc-note{font-size:12px;color:var(--cb-muted);margin:0;}
 
 .cb-grid{display:grid;grid-template-columns:1fr;gap:10px;}
 @media(min-width:760px){.cb-grid{grid-template-columns:1fr 1fr;}}
-.cb-card{border:1px solid var(--cb-border);border-radius:14px;padding:12px;background:rgba(255,255,255,.02);}
+
+.cb-card{
+  border:1px solid var(--cb-border);
+  border-radius:14px;
+  padding:12px;
+  background:rgba(255,255,255,.02);
+}
 .cb-card h4{margin:0 0 6px;font-size:13.5px;}
 .cb-card p{margin:0 0 10px;font-size:12.5px;line-height:1.45;color:var(--cb-muted);}
 .cb-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.cb-switch{appearance:none;width:46px;height:28px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid var(--cb-border);position:relative;cursor:pointer;}
-.cb-switch:before{content:"";position:absolute;top:50%;left:4px;width:20px;height:20px;border-radius:50%;transform:translateY(-50%);background:#fff;transition:left .16s ease;}
+
+.cb-switch{
+  appearance:none;
+  width:46px;height:28px;
+  border-radius:999px;
+  background:rgba(255,255,255,.10);
+  border:1px solid var(--cb-border);
+  position:relative;
+  cursor:pointer;
+}
+.cb-switch:before{
+  content:"";
+  position:absolute;top:50%;left:4px;
+  width:20px;height:20px;border-radius:50%;
+  transform:translateY(-50%);
+  background:#fff;
+  transition:left .16s ease;
+}
 .cb-switch:checked{background:rgba(0,255,217,.18);border-color:rgba(0,255,217,.40);}
 .cb-switch:checked:before{left:22px;}
 .cb-switch:disabled{opacity:.6;cursor:not-allowed;}
 
-.cb-togglelink{display:inline-flex;align-items:center;gap:8px;font-weight:700;}
+.cb-togglelink{display:inline-flex;align-items:center;gap:8px;font-weight:750;}
 .cb-caret{display:inline-block;transform:rotate(0deg);transition:transform .15s ease;opacity:.85;}
 .cb-togglelink.open .cb-caret{transform:rotate(180deg);}
+
+/* Responsive: stack + full-width buttons */
+@media (max-width: 720px){
+  .cb-top{flex-direction:column;align-items:stretch;}
+  .cb-actions{width:100%;min-width:0;}
+  .cb-btn{width:100%;}
+}
 `;
     document.head.appendChild(style);
 
@@ -114,7 +205,7 @@
 
 <div class="cb-panel" role="dialog" aria-modal="true" aria-label="Cookie-Einstellungen">
   <div class="cb-top">
-    <div>
+    <div class="cb-left">
       <h3 class="cb-title">Cookie-Einstellungen</h3>
       <p class="cb-text">
         Wir verwenden technisch notwendige Cookies für den Betrieb der Website.
@@ -124,9 +215,7 @@
       <div class="cb-links">
         <a href="${PRIVACY_URL}" rel="nofollow">Datenschutz</a>
         <a href="${IMPRINT_URL}" rel="nofollow">Impressum</a>
-        <a href="#" id="cb-toggle" class="cb-togglelink">
-          Einstellungen <span class="cb-caret">▾</span>
-        </a>
+        <a href="#" id="cb-toggle" class="cb-togglelink">Einstellungen <span class="cb-caret">▾</span></a>
       </div>
 
       <div class="cb-accordion" id="cb-accordion" aria-label="Cookie-Auswahl">
@@ -173,7 +262,6 @@
           Sie können Ihre Auswahl jederzeit über „Cookie-Einstellungen“ ändern.
         </div>
       </div>
-
     </div>
 
     <div class="cb-actions">
@@ -207,26 +295,50 @@
 
   function hide() {
     root.classList.remove("cb-visible");
+    // keep accordion state as-is (user choice)
+  }
+
+  function openBannerAndSettings() {
+    mount(true);
+    const c = get() || { analytics: false, marketing: false, functional: false };
+    sync(c);
+    root.classList.add("cb-visible");
+    expand(true);
   }
 
   function bind() {
-    // backdrop closes ONLY (optional). Here we just close banner visibility? Better: do nothing.
-    // We'll close the accordion on backdrop click, keep banner visible until decision.
-    $("[data-cb-close]", root).addEventListener("click", () => {
-      // collapse settings but keep banner
-      expand(false);
+    // Framer-safe footer link: any <a href="#cookie-settings"> opens settings
+    document.addEventListener("click", (e) => {
+      const a = e.target?.closest?.(`a[href="${FOOTER_HASH}"]`);
+      if (!a) return;
+      e.preventDefault();
+      openBannerAndSettings();
     });
 
-    $("#cb-toggle", root).addEventListener("click", (e) => { e.preventDefault(); expand(); });
+    // If user opens a URL that already has the hash
+    if (location.hash === FOOTER_HASH) {
+      setTimeout(() => openBannerAndSettings(), 0);
+    }
+
+    // Collapse settings when clicking backdrop (banner stays)
+    $("[data-cb-close]", root).addEventListener("click", () => expand(false));
+
+    $("#cb-toggle", root).addEventListener("click", (e) => {
+      e.preventDefault();
+      expand();
+    });
 
     $("#cb-accept-all", root).addEventListener("click", () => {
-      const c = set({ analytics:true, marketing:true, functional:true });
-      sync(c); hide(); runDeferred(c);
+      const c = set({ analytics: true, marketing: true, functional: true });
+      sync(c);
+      hide();
+      runDeferred(c);
     });
 
     $("#cb-reject", root).addEventListener("click", () => {
-      const c = set({ analytics:false, marketing:false, functional:false });
-      sync(c); hide();
+      const c = set({ analytics: false, marketing: false, functional: false });
+      sync(c);
+      hide();
     });
 
     $("#cb-save", root).addEventListener("click", () => {
@@ -235,10 +347,20 @@
         marketing: $("#cb-marketing", root).checked,
         functional: $("#cb-functional", root).checked,
       });
-      hide(); runDeferred(c);
+      hide();
+      runDeferred(c);
     });
   }
 
-  // Mount immediately (no consent yet)
-  mount(true);
+  // Public API (optional)
+  window.ArqionCookie = {
+    open: () => openBannerAndSettings(),
+    get,
+    reset: () => { localStorage.removeItem(KEY); mount(true); root.classList.add("cb-visible"); }
+  };
+
+  // Show banner ONLY if no consent stored yet
+  if (!existing) {
+    mount(true);
+  }
 })();
